@@ -1,0 +1,30 @@
+/linecli.exe
+/linecli
+*.exe
+/.claude/
+
+# preview/download 的舊預設輸出目錄：解密後的私人媒體與檔案
+/linecli-media/
+/linecli-downloads/
+
+# line-cli 的私人輸出與狀態：--out 的 JSONL 與暫存檔、送出紀錄、金鑰快取、LINE 資料庫複本
+*.jsonl
+*.tmp*
+key.dat
+send.lock
+*.edb
+*.edb-wal
+*.edb-shm
+
+# 本機測試，不進版控
+/internal/line/e2ee_test.go
+/internal/line/talk_test.go
+
+# 本機稽核報告，不進版控
+/analysis.md
+
+# go run ./tools/dist 的輸出：發佈用的 zip、install.ps1、checksums.txt
+/dist/
+
+# 建置輸出
+/build/

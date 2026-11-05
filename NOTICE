@@ -1,0 +1,57 @@
+line-cli
+Copyright (c) 2026 WellsTsai
+
+Licensing
+
+  The source code published in this repository (the "open edition") is licensed
+  under the MIT License.
+
+  Official prebuilt releases contain a proprietary component, the code
+  that communicates with LINE's servers (the "Protocol Core"). The MIT License
+  does not cover it and its source code is not published. All rights in it are
+  reserved. You may install and run official releases to use your own LINE
+  account and data.
+
+No warranty
+
+  Official releases are provided "AS IS", without warranty of any kind, and the
+  author is not liable for any claim, damages or other liability arising from
+  their use. You are responsible for using line-cli lawfully and in line with
+  LINE's terms of use.
+
+Trademarks
+
+  LINE is a trademark of LY Corporation. line-cli is an independent, unofficial
+  project. It is not affiliated with, endorsed by or sponsored by LY
+  Corporation.
+
+Third-party software
+
+  line-cli includes third-party software under its own licenses. See
+  THIRD_PARTY_NOTICES.txt.
+
+--------------------------------------------------------------------------------
+
+以下為中文說明。如與上方英文內容不一致，以英文為準。
+
+授權
+
+  本專案公開的原始碼（open 版）採用 MIT 授權。
+
+  官方預編譯版包含一個專有元件，也就是與 LINE 伺服器通訊的程式（「協定核心」）。
+  協定核心不適用 MIT 授權，也不公開原始碼，保留一切權利。你可以安裝並執行官方版本，
+  用於你自己的 LINE 帳號與資料。
+
+不提供保證
+
+  官方版本依「現況」提供，不附任何形式的保證，作者對使用所產生的任何索賠、損害或
+  其他責任概不負責。你必須自行確保使用方式合法，並符合 LINE 的使用條款。
+
+商標
+
+  LINE 是 LY Corporation 的商標。line-cli 是獨立的非官方專案，與 LY Corporation
+  沒有關聯，也未獲其認可或贊助。
+
+第三方軟體
+
+  line-cli 包含依各自授權條款提供的第三方軟體，詳見 THIRD_PARTY_NOTICES.txt。
