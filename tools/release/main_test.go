@@ -56,39 +56,39 @@ func TestSetReleaseRewritesOnlyTheConstant(t *testing.T) {
 }
 
 func TestInsertSectionKeepsIntroOnTop(t *testing.T) {
-	log := "# 更新紀錄\n\n說明。\n\n## 0.1.0 - 2026-10-31\n\n- 第一版\n"
-	got := insertSection(log, "## 0.20261102.930 - 2026-11-02 09:30\n\n- 新的\n")
-	want := "# 更新紀錄\n\n說明。\n\n## 0.20261102.930 - 2026-11-02 09:30\n\n- 新的\n\n## 0.1.0 - 2026-10-31\n\n- 第一版\n"
+	log := "# Changelog\n\nIntro.\n\n## 0.1.0 - 2026-10-31\n\n- First release\n"
+	got := insertSection(log, "## 0.20261102.930 - 2026-11-02 09:30\n\n- new\n")
+	want := "# Changelog\n\nIntro.\n\n## 0.20261102.930 - 2026-11-02 09:30\n\n- new\n\n## 0.1.0 - 2026-10-31\n\n- First release\n"
 	if got != want {
 		t.Fatalf("insertSection:\n%s\nwant:\n%s", got, want)
 	}
 	if v, err := topVersion(got); err != nil || v != (version{0, 20261102, 930}) {
 		t.Fatalf("topVersion = %s, %v", v, err)
 	}
-	if got := insertSection("# 更新紀錄", "## 0.1.0 - 2026-10-31\n"); got != "# 更新紀錄\n\n## 0.1.0 - 2026-10-31\n" {
+	if got := insertSection("# Changelog", "## 0.1.0 - 2026-10-31\n"); got != "# Changelog\n\n## 0.1.0 - 2026-10-31\n" {
 		t.Fatalf("insertSection into a changelog without sections: %q", got)
 	}
 }
 
 func TestNotesGroupCommitsByType(t *testing.T) {
 	got := notes([]commit{
-		{"a1", "fix(read): 修好翻頁"},
-		{"a2", "feat(chat): 可打 chat_id 前綴"},
-		{"a3", "test(live): 只是測試"},
-		{"a4", "docs: 改 README"},
-		{"a5", "feat(output)!: 預設省略 ID"},
+		{"a1", "fix(read): fix paging"},
+		{"a2", "feat(chat): accept chat_id prefixes"},
+		{"a3", "test(live): tests only"},
+		{"a4", "docs: update README"},
+		{"a5", "feat(output)!: omit IDs by default"},
 		{"a6", "chore(release): v0.1.1"},
-		{"a7", "Merge 前的舊式訊息"},
+		{"a7", "Old message before merge"},
 		{"a8", "style: gofmt"},
 	})
-	want := "### 不相容的變更\n\n- output：預設省略 ID (a5)\n\n" +
-		"### 新功能\n\n- chat：可打 chat_id 前綴 (a2)\n\n" +
-		"### 修正\n\n- read：修好翻頁 (a1)\n\n" +
-		"### 其他\n\n- 改 README (a4)\n- Merge 前的舊式訊息 (a7)\n"
+	want := "### Breaking changes\n\n- output: omit IDs by default (a5)\n\n" +
+		"### Features\n\n- chat: accept chat_id prefixes (a2)\n\n" +
+		"### Fixes\n\n- read: fix paging (a1)\n\n" +
+		"### Other\n\n- update README (a4)\n- Old message before merge (a7)\n"
 	if got != want {
 		t.Fatalf("notes:\n%s\nwant:\n%s", got, want)
 	}
-	if got := notes([]commit{{"b1", "test: x"}}); !strings.Contains(got, "內部調整") {
+	if got := notes([]commit{{"b1", "test: x"}}); !strings.Contains(got, "internal changes") {
 		t.Fatalf("notes with only tests: %q", got)
 	}
 }
@@ -97,12 +97,12 @@ func TestNotesGroupCommitsByType(t *testing.T) {
 // public/private split must not reach it, even when they are feat or fix.
 func TestNotesLeaveOutInternalWork(t *testing.T) {
 	got := notes([]commit{
-		{"a1", "feat(cshared): 匯出 line_x"},
-		{"a2", "fix(public): 哨兵"},
-		{"a3", "ci(release): 改 workflow"},
-		{"a4", "feat(chat): 給使用者的功能"},
+		{"a1", "feat(cshared): export line_x"},
+		{"a2", "fix(public): check markers"},
+		{"a3", "ci(release): update workflow"},
+		{"a4", "feat(chat): a user-facing feature"},
 	})
-	want := "### 新功能\n\n- chat：給使用者的功能 (a4)\n"
+	want := "### Features\n\n- chat: a user-facing feature (a4)\n"
 	if got != want {
 		t.Fatalf("notes:\n%s\nwant:\n%s", got, want)
 	}
@@ -223,16 +223,16 @@ func TestReleaseInGitRepo(t *testing.T) {
 
 	write("go.mod", "module example.com/x\n\ngo 1.27\n")
 	write(versionFile, "package cli\n\nconst release = \"\"\n")
-	write(changelogFile, "# 更新紀錄\n\n## 0.1.0 - 2026-10-31\n\n- 第一版\n")
+	write(changelogFile, "# Changelog\n\n## 0.1.0 - 2026-10-31\n\n- First release\n")
 	gitT("init", "-q", "-b", "main")
 	gitT("add", ".")
 	gitT("commit", "-q", "-m", "init")
 	gitT("tag", "-a", "v0.1.0", "-m", "v0.1.0")
 	at("2026-11-02T01:30:45Z") // 09:30 in Taiwan
 	wantErr("no commits since v0.1.0")
-	commitAs("fix(read): 修好翻頁")
-	commitAs("feat(chat): 可打前綴")
-	commitAs("test: 補測試")
+	commitAs("fix(read): fix paging")
+	commitAs("feat(chat): accept prefixes")
+	commitAs("test: add tests")
 
 	// Beta: no version argument, named after the release commit's time.
 	wantErr("in beta", "minor")
@@ -241,7 +241,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, "v0.1.0 -> v0.20261102.930, 3 commits") || !strings.Contains(out, "- chat：可打前綴 (") {
+	if !strings.Contains(out, "v0.1.0 -> v0.20261102.930, 3 commits") || !strings.Contains(out, "- chat: accept prefixes (") {
 		t.Fatalf("dry run output:\n%s", out)
 	}
 	write("untracked.txt", "x")
@@ -262,8 +262,8 @@ func TestReleaseInGitRepo(t *testing.T) {
 		t.Fatalf("a beta release changed %s:\n%s", versionFile, got)
 	}
 	log := read(changelogFile)
-	if !strings.HasPrefix(log, "# 更新紀錄\n\n## 0.20261102.930 - 2026-11-02 09:30\n\n### 新功能\n\n- chat：可打前綴 (") ||
-		!strings.Contains(log, "### 修正\n\n- read：修好翻頁 (") || strings.Contains(log, "補測試") ||
+	if !strings.HasPrefix(log, "# Changelog\n\n## 0.20261102.930 - 2026-11-02 09:30\n\n### Features\n\n- chat: accept prefixes (") ||
+		!strings.Contains(log, "### Fixes\n\n- read: fix paging (") || strings.Contains(log, "add tests") ||
 		!strings.Contains(log, "\n## 0.1.0 - 2026-10-31\n") {
 		t.Fatalf("%s:\n%s", changelogFile, log)
 	}
@@ -273,7 +273,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	if got := gitT("describe", "--tags", "--exact-match"); got != "v0.20261102.930" {
 		t.Fatalf("HEAD is tagged %q", got)
 	}
-	if msg := gitT("tag", "-l", "--format=%(contents)", "v0.20261102.930"); !strings.Contains(msg, "line-cli v0.20261102.930") || !strings.Contains(msg, "- chat：可打前綴 (") {
+	if msg := gitT("tag", "-l", "--format=%(contents)", "v0.20261102.930"); !strings.Contains(msg, "line-cli v0.20261102.930") || !strings.Contains(msg, "- chat: accept prefixes (") {
 		t.Fatalf("tag message:\n%s", msg)
 	}
 	if st := gitT("status", "--porcelain"); st != "" {
@@ -282,7 +282,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	wantErr("no commits since v0.20261102.930")
 
 	// The first official release, then x for features and y for fixes only.
-	commitAs("fix(send): 修正")
+	commitAs("fix(send): fix a bug")
 	at("2026-11-03T08:00:00Z")
 	if _, err := release("1.0.0"); err != nil {
 		t.Fatal(err)
@@ -293,7 +293,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	if v, _ := topVersion(read(changelogFile)); v != (version{1, 0, 0}) {
 		t.Fatalf("%s starts at %s", changelogFile, v)
 	}
-	commitAs("feat(search): 新功能")
+	commitAs("feat(search): add a feature")
 	wantErr("past the beta")
 	wantErr("bug fixes only", "patch")
 	if _, err := release("minor"); err != nil {
@@ -302,7 +302,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	if got := gitT("describe", "--tags", "--exact-match"); got != "v1.1.0" {
 		t.Fatalf("HEAD is tagged %q", got)
 	}
-	commitAs("fix(search): 修正")
+	commitAs("fix(search): fix a bug")
 	if _, err := release("patch"); err != nil {
 		t.Fatal(err)
 	}

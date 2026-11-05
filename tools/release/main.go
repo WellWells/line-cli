@@ -167,7 +167,7 @@ func parseSubject(c commit) entry {
 	}
 	text := m[4]
 	if m[2] != "" {
-		text = m[2] + "：" + text
+		text = m[2] + ": " + text
 	}
 	return entry{kind: m[1], scope: m[2], breaking: m[3] == "!", text: text, hash: c.hash}
 }
@@ -185,10 +185,10 @@ var groups = []struct {
 	title string
 	match func(entry) bool
 }{
-	{"不相容的變更", func(e entry) bool { return e.breaking }},
-	{"新功能", func(e entry) bool { return e.kind == "feat" }},
-	{"修正", func(e entry) bool { return e.kind == "fix" }},
-	{"其他", func(entry) bool { return true }},
+	{"Breaking changes", func(e entry) bool { return e.breaking }},
+	{"Features", func(e entry) bool { return e.kind == "feat" }},
+	{"Fixes", func(e entry) bool { return e.kind == "fix" }},
+	{"Other", func(entry) bool { return true }},
 }
 
 func isRelease(c commit) bool { return strings.HasPrefix(c.subject, "chore(release)") }
@@ -216,7 +216,7 @@ func notes(commits []commit) string {
 		}
 	}
 	if b.Len() == 0 {
-		return "- 只有測試與內部調整，指令與輸出不變。\n"
+		return "- Tests and internal changes only. Commands and output are unchanged.\n"
 	}
 	return strings.TrimSuffix(b.String(), "\n")
 }
