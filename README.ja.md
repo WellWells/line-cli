@@ -1,6 +1,6 @@
 # line-cli：Windows 版 LINE のコマンドラインツール
 
-[繁體中文](README.md) | [English](README.en.md) | **日本語**
+[English](README.md) | [繁體中文](README.zh-TW.md) | **日本語**
 
 [![Release](https://img.shields.io/github/v/release/WellWells/line-cli?label=release)](https://github.com/WellWells/line-cli/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
