@@ -1,4 +1,9 @@
-# line-cli
+# line-cli：Windows 版 LINE 指令列工具
+
+**繁體中文** | [English](README.en.md) | [日本語](README.ja.md)
+
+[![Release](https://img.shields.io/github/v/release/WellWells/line-cli?label=release)](https://github.com/WellWells/line-cli/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 在 Windows 上用指令或 AI agent（Claude Code、Codex 等）操作自己的 LINE：讀訊息、搜尋、傳訊息和檔案、標記成員、按表情回應、收回訊息。
 
