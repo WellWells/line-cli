@@ -2,6 +2,14 @@
 
 Versions follow `v1.x.y`: x for new features or other changes, y for bug fixes only.
 
+## 1.1.0 - 2026-11-06 16:03
+
+### Other
+
+- readme: add English and Japanese READMEs
+- readme: make English the main README
+- make English the primary language of project docs
+
 ## 1.0.0 - 2026-11-05 22:40
 
 First public release.

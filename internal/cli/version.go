@@ -10,7 +10,7 @@ import (
 // release is the version of an official release, 1.x.y: x for new features
 // or other changes, y for bug fixes only. It stays empty while line-cli is in
 // beta; go run ./tools/release sets it.
-const release = "1.0.0"
+const release = "1.1.0"
 
 // Version is release, or during the beta the time of the commit the binary
 // was built from (BetaVersion), so each build installed during development
