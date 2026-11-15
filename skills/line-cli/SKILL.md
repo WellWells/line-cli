@@ -123,7 +123,7 @@ line watch <chat_id> --count 1        # stop at the next message
 
 ## Updates
 
-`line update` shows the latest version and the command that updates line-cli. If stderr has a `line: note:` line saying a new version is available, tell the user and give them its command. Do not run the update yourself.
+`line update` shows the latest version and the command that updates line-cli; from an agent it never installs anything. If stderr has a `line: note:` line saying a new version is available, tell the user. Run `line update -y` only when the user asked to update.
 
 `line uninstall` removes line-cli itself, its skill and its folder, including the key cache and downloads. It cannot be undone: run it with `-y` only when the user asked to remove line-cli and approved that. To remove only the skill: `line skill uninstall`.
 

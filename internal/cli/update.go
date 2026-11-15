@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -126,11 +127,29 @@ type updateResult struct {
 	Latest          string `json:"latest"`
 	UpdateAvailable bool   `json:"update_available"`
 	Command         string `json:"command,omitempty"`
+	Updated         bool   `json:"updated,omitempty"`
+}
+
+// runInstaller runs the install command in Windows PowerShell with its output
+// on w (a test seam: tests never run it). The installer renames a running
+// program aside, so it can replace the line-cli that started it.
+var runInstaller = func(command string, w io.Writer) error {
+	ps := filepath.Join(os.Getenv("SystemRoot"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+	c := exec.Command(ps, "-NoProfile", "-Command", command)
+	c.Stdout, c.Stderr = w, w
+	return c.Run()
+}
+
+// askUpdate asks the person on the console whether to install latest now.
+func (rc *runCtx) askUpdate(latest string, l lang) bool {
+	return askYesNo(rc.err, fmt.Sprintf(l.pick([2]string{"line-cli %s is available (you have %s). Update now?", "line-cli %s 已推出（目前是 %s）。要現在更新嗎？"}), latest, Version))
 }
 
 func (rc *runCtx) update(args []string) int {
 	fs := newFlags("update")
-	if err := parseArgs(fs, args); err != nil {
+	yes := fs.Bool("yes", false, "")
+	y := fs.Bool("y", false, "")
+	if err := parseArgs(fs, args, "yes", "y"); err != nil {
 		return rc.fail(err)
 	}
 	if fs.NArg() > 0 {
@@ -144,12 +163,21 @@ func (rc *runCtx) update(args []string) int {
 	if res.UpdateAvailable {
 		res.Command = updateCommand()
 	}
+	if res.UpdateAvailable && (*yes || *y || canPrompt() && rc.askUpdate(latest, userLang())) {
+		if err := runInstaller(res.Command, rc.err); err != nil {
+			return rc.fail(&line.Error{Code: line.ErrUpdateFailed, Message: "the install command failed (" + err.Error() + "); run it in PowerShell yourself: " + res.Command})
+		}
+		res.Updated = true
+	}
 	if !rc.text {
 		return rc.emit(res)
 	}
-	if res.UpdateAvailable {
-		fmt.Fprintf(rc.out, "line-cli %s is available (you have %s)\nTo update, run this in PowerShell: %s\n", latest, Version, res.Command)
-	} else {
+	switch {
+	case res.Updated:
+		fmt.Fprintf(rc.out, "line-cli %s is installed (you had %s)\n", latest, Version)
+	case res.UpdateAvailable:
+		fmt.Fprintf(rc.out, "line-cli %s is available (you have %s)\nTo update, run line update -y, or this in PowerShell: %s\n", latest, Version, res.Command)
+	default:
 		fmt.Fprintf(rc.out, "line-cli %s is the latest version (you have %s)\n", latest, Version)
 	}
 	return 0

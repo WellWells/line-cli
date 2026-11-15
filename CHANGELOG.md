@@ -2,6 +2,12 @@
 
 Versions follow `v1.x.y`: x for new features or other changes, y for bug fixes only.
 
+## 1.2.0 - 2026-11-15 23:29
+
+### Features
+
+- update: ask before installing a newer version, -y to skip
+
 ## 1.1.1 - 2026-11-15 22:56
 
 ### Fixes

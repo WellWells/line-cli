@@ -24,6 +24,7 @@ const (
 	ErrDuplicateSend       ErrorCode = "DUPLICATE_SEND"
 	ErrSenderAmbiguous     ErrorCode = "SENDER_AMBIGUOUS"
 	ErrUpdateCheckFailed   ErrorCode = "UPDATE_CHECK_FAILED"
+	ErrUpdateFailed        ErrorCode = "UPDATE_FAILED"
 )
 
 type Error struct {

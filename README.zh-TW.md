@@ -77,7 +77,7 @@ line status
 
 ### 更新
 
-再執行一次安裝指令就是更新。`line update` 會告訴你有沒有新版本；每天第一次使用時也會自動檢查，有新版會提示更新指令。
+要更新就執行 `line update`：它會顯示最新版本，並詢問是否現在更新（加 `-y` 不詢問、直接更新）。再執行一次安裝指令也能更新。每天第一次使用時也會自動檢查，有新版會提示。
 
 ## 搭配 Claude Code 或 Codex
 
@@ -154,7 +154,7 @@ line skill install
 | 傳訊息 | `line send --to 小明 --message "晚點到" -y` |
 | 傳檔案或照片 | `line send --to 小明 --file C:\docs\report.pdf -y` |
 | 即時看新訊息 | `line watch` |
-| 查看新版本 | `line update` |
+| 更新到最新版本 | `line update` |
 
 想看結果比較好讀，可以加 `--text`：
 

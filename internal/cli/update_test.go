@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,6 +38,84 @@ func updateSetup(t *testing.T, current string) {
 	saved := Version
 	Version = current
 	t.Cleanup(func() { Version = saved })
+	// No console and no installer unless a test sets them: nothing here may
+	// ask on the real console or run PowerShell.
+	prompt, ask, install := canPrompt, askYesNo, runInstaller
+	t.Cleanup(func() { canPrompt, askYesNo, runInstaller = prompt, ask, install })
+	canPrompt = func() bool { return false }
+	askYesNo = func(io.Writer, string) bool { t.Error("asked without a console"); return false }
+	runInstaller = func(string, io.Writer) error { t.Error("ran the installer"); return nil }
+}
+
+// fakeUpdate answers the question with answer and records installs.
+func fakeUpdate(t *testing.T, console, answer bool) (asked *int, installed *[]string) {
+	t.Helper()
+	asked, installed = new(int), new([]string)
+	canPrompt = func() bool { return console }
+	askYesNo = func(_ io.Writer, q string) bool {
+		*asked++
+		if !strings.Contains(q, "1.1.0") || !strings.Contains(q, "1.0.0") {
+			t.Errorf("question %q", q)
+		}
+		return answer
+	}
+	runInstaller = func(cmd string, _ io.Writer) error {
+		*installed = append(*installed, cmd)
+		return nil
+	}
+	return asked, installed
+}
+
+func TestUpdateAsksOnConsole(t *testing.T) {
+	for _, c := range []struct {
+		name            string
+		args            []string
+		console, answer bool
+		wantAsk         int
+		wantUpdated     bool
+	}{
+		{"yes", []string{"update"}, true, true, 1, true},
+		{"no", []string{"update"}, true, false, 1, false},
+		{"-y skips the question", []string{"update", "-y"}, true, false, 0, true},
+		{"--yes", []string{"update", "--yes"}, false, false, 0, true},
+		{"no console only reports", []string{"update"}, false, true, 0, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			updateSetup(t, "1.0.0")
+			fakeRelease(t, "1.1.0", nil)
+			asked, installed := fakeUpdate(t, c.console, c.answer)
+			rc, out, errb := runCLIErr(c.args...)
+			var got updateResult
+			if err := json.Unmarshal(out, &got); err != nil || rc != 0 {
+				t.Fatalf("exit %d: %s %s", rc, out, errb)
+			}
+			if *asked != c.wantAsk || got.Updated != c.wantUpdated || len(*installed) != map[bool]int{true: 1}[c.wantUpdated] {
+				t.Errorf("asked %d, installed %v, result %+v", *asked, *installed, got)
+			}
+			if c.wantUpdated && (*installed)[0] != got.Command {
+				t.Errorf("ran %q, command %q", (*installed)[0], got.Command)
+			}
+		})
+	}
+}
+
+func TestUpdateUpToDateNeitherAsksNorInstalls(t *testing.T) {
+	updateSetup(t, "1.1.0")
+	fakeRelease(t, "1.1.0", nil)
+	asked, installed := fakeUpdate(t, true, true)
+	if rc, out, _ := runCLIErr("update", "-y"); rc != 0 || *asked != 0 || len(*installed) != 0 {
+		t.Errorf("exit %d: %s; asked %d, installed %v", rc, out, *asked, *installed)
+	}
+}
+
+func TestUpdateInstallFails(t *testing.T) {
+	updateSetup(t, "1.0.0")
+	fakeRelease(t, "1.1.0", nil)
+	runInstaller = func(string, io.Writer) error { return errors.New("exit status 1") }
+	rc, out, errb := runCLIErr("update", "-y")
+	if rc == 0 || !strings.Contains(string(out)+errb, "UPDATE_FAILED") || !strings.Contains(string(out)+errb, "| iex") {
+		t.Errorf("exit %d: %s %s", rc, out, errb)
+	}
 }
 
 func day(n int) time.Time { return time.Date(2026, 11, n, 9, 0, 0, 0, time.Local) }

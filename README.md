@@ -77,7 +77,7 @@ The first run fetches the database key by itself, which takes a few seconds. No 
 
 ### Update
 
-Run the install command again to update. `line update` tells you whether a new version is out. line-cli also checks once a day on first use and shows the update command when there is one.
+To update, run `line update`: it shows the latest version and asks whether to update now (`-y` updates without asking). Running the install command again also updates. line-cli also checks once a day on first use and tells you when a new version is out.
 
 ## Use with Claude Code or Codex
 
@@ -154,7 +154,7 @@ You can run every command yourself without an AI agent. Replace `Alex` below wit
 | Send a message | `line send --to Alex --message "Running late" -y` |
 | Send a file or photo | `line send --to Alex --file C:\docs\report.pdf -y` |
 | Watch new messages live | `line watch` |
-| Check for a new version | `line update` |
+| Update to the latest version | `line update` |
 
 For easier reading, add `--text`:
 

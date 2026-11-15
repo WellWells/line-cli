@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -136,10 +135,7 @@ func (rc *runCtx) confirmUninstall(p *uninstallPlan, l lang) bool {
 	for _, t := range p.targets {
 		fmt.Fprintln(rc.err, "  "+t)
 	}
-	fmt.Fprint(rc.err, l.pick([2]string{"Continue? [y/N] ", "確定要刪除嗎？[y/N] "}))
-	answer, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	answer = strings.ToLower(strings.TrimSpace(answer))
-	return answer == "y" || answer == "yes"
+	return askYesNo(rc.err, l.pick([2]string{"Continue?", "確定要刪除嗎？"}))
 }
 
 // moveProgramsOut moves linecli.exe and line.exe, both running, to a new folder
