@@ -81,10 +81,10 @@ func TestNotesGroupCommitsByType(t *testing.T) {
 		{"a7", "Old message before merge"},
 		{"a8", "style: gofmt"},
 	})
-	want := "### Breaking changes\n\n- output: omit IDs by default (a5)\n\n" +
-		"### Features\n\n- chat: accept chat_id prefixes (a2)\n\n" +
-		"### Fixes\n\n- read: fix paging (a1)\n\n" +
-		"### Other\n\n- update README (a4)\n- Old message before merge (a7)\n"
+	want := "### Breaking changes\n\n- output: omit IDs by default\n\n" +
+		"### Features\n\n- chat: accept chat_id prefixes\n\n" +
+		"### Fixes\n\n- read: fix paging\n\n" +
+		"### Other\n\n- update README\n- Old message before merge\n"
 	if got != want {
 		t.Fatalf("notes:\n%s\nwant:\n%s", got, want)
 	}
@@ -93,16 +93,18 @@ func TestNotesGroupCommitsByType(t *testing.T) {
 	}
 }
 
-// CHANGELOG.md is a public file: commits about the private core and the
-// public/private split must not reach it, even when they are feat or fix.
+// CHANGELOG.md is a public file: commits about the private core, the
+// public/private split and the release tooling must not reach it, even when
+// they are feat or fix. Neither do commit hashes.
 func TestNotesLeaveOutInternalWork(t *testing.T) {
 	got := notes([]commit{
 		{"a1", "feat(cshared): export line_x"},
 		{"a2", "fix(public): check markers"},
 		{"a3", "ci(release): update workflow"},
 		{"a4", "feat(chat): a user-facing feature"},
+		{"a5", "feat(release): publish a new file"},
 	})
-	want := "### Features\n\n- chat: a user-facing feature (a4)\n"
+	want := "### Features\n\n- chat: a user-facing feature\n"
 	if got != want {
 		t.Fatalf("notes:\n%s\nwant:\n%s", got, want)
 	}
@@ -241,7 +243,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, "v0.1.0 -> v0.20261102.930, 3 commits") || !strings.Contains(out, "- chat: accept prefixes (") {
+	if !strings.Contains(out, "v0.1.0 -> v0.20261102.930, 3 commits") || !strings.Contains(out, "- chat: accept prefixes\n") {
 		t.Fatalf("dry run output:\n%s", out)
 	}
 	write("untracked.txt", "x")
@@ -262,8 +264,8 @@ func TestReleaseInGitRepo(t *testing.T) {
 		t.Fatalf("a beta release changed %s:\n%s", versionFile, got)
 	}
 	log := read(changelogFile)
-	if !strings.HasPrefix(log, "# Changelog\n\n## 0.20261102.930 - 2026-11-02 09:30\n\n### Features\n\n- chat: accept prefixes (") ||
-		!strings.Contains(log, "### Fixes\n\n- read: fix paging (") || strings.Contains(log, "add tests") ||
+	if !strings.HasPrefix(log, "# Changelog\n\n## 0.20261102.930 - 2026-11-02 09:30\n\n### Features\n\n- chat: accept prefixes\n") ||
+		!strings.Contains(log, "### Fixes\n\n- read: fix paging\n") || strings.Contains(log, "add tests") ||
 		!strings.Contains(log, "\n## 0.1.0 - 2026-10-31\n") {
 		t.Fatalf("%s:\n%s", changelogFile, log)
 	}
@@ -273,7 +275,7 @@ func TestReleaseInGitRepo(t *testing.T) {
 	if got := gitT("describe", "--tags", "--exact-match"); got != "v0.20261102.930" {
 		t.Fatalf("HEAD is tagged %q", got)
 	}
-	if msg := gitT("tag", "-l", "--format=%(contents)", "v0.20261102.930"); !strings.Contains(msg, "line-cli v0.20261102.930") || !strings.Contains(msg, "- chat: accept prefixes (") {
+	if msg := gitT("tag", "-l", "--format=%(contents)", "v0.20261102.930"); !strings.Contains(msg, "line-cli v0.20261102.930") || !strings.Contains(msg, "- chat: accept prefixes\n") {
 		t.Fatalf("tag message:\n%s", msg)
 	}
 	if st := gitT("status", "--porcelain"); st != "" {

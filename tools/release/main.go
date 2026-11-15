@@ -155,7 +155,6 @@ type entry struct {
 	scope    string
 	breaking bool
 	text     string
-	hash     string
 }
 
 var subjectRe = regexp.MustCompile(`^([a-z]+)(?:\(([^)]*)\))?(!)?: *(.+)$`)
@@ -163,22 +162,22 @@ var subjectRe = regexp.MustCompile(`^([a-z]+)(?:\(([^)]*)\))?(!)?: *(.+)$`)
 func parseSubject(c commit) entry {
 	m := subjectRe.FindStringSubmatch(c.subject)
 	if m == nil {
-		return entry{text: c.subject, hash: c.hash}
+		return entry{text: c.subject}
 	}
 	text := m[4]
 	if m[2] != "" {
 		text = m[2] + ": " + text
 	}
-	return entry{kind: m[1], scope: m[2], breaking: m[3] == "!", text: text, hash: c.hash}
+	return entry{kind: m[1], scope: m[2], breaking: m[3] == "!", text: text}
 }
 
 // skipped commit types say nothing to someone choosing or updating a version.
 var skipped = map[string]bool{"test": true, "style": true, "ci": true}
 
-// internalScopes are the private core and the public/private split. They do not
-// change what line-cli does, and CHANGELOG.md is a public file, so their commits
-// stay out of it even as feat or fix.
-var internalScopes = map[string]bool{"cshared": true, "public": true}
+// internalScopes are the private core, the public/private split and the release
+// tooling. They do not change what line-cli does, and CHANGELOG.md is a public
+// file, so their commits stay out of it even as feat or fix.
+var internalScopes = map[string]bool{"cshared": true, "public": true, "release": true}
 
 // groups lists the changelog headings in order.
 var groups = []struct {
@@ -208,7 +207,7 @@ func notes(commits []commit) string {
 		for i, e := range entries {
 			if !used[i] && g.match(e) {
 				used[i] = true
-				lines = append(lines, "- "+e.text+" ("+e.hash+")")
+				lines = append(lines, "- "+e.text)
 			}
 		}
 		if len(lines) > 0 {

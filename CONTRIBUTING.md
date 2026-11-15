@@ -8,7 +8,7 @@ The code that talks to LINE's servers (`send`, `react`, `unsend`, `download`, Op
 
 ## Build and test
 
-Requires Windows x64 and Go 1.27.3 or later. No C compiler is needed.
+Requires Windows x64 and Go 1.27.4 or later. No C compiler is needed.
 
 ```powershell
 git clone https://github.com/WellWells/line-cli

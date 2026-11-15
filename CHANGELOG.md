@@ -2,6 +2,12 @@
 
 Versions follow `v1.x.y`: x for new features or other changes, y for bug fixes only.
 
+## 1.1.1 - 2026-11-15 22:56
+
+### Fixes
+
+- send: skip expired access tokens and use the live one
+
 ## 1.1.0 - 2026-11-06 16:03
 
 ### Other
