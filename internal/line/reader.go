@@ -58,6 +58,7 @@ func (r *Reader) query(sql string, params ...any) (*sqlite3.Stmt, error) {
 var optionalTables = map[string]bool{
 	"_squarechat": true, "_squaremember": true, "_square": true, "_squarethread": true,
 	"_room": true, "_groupchat": true, "_buddydetail": true, "_chatoption": true,
+	"_channeltoken": true,
 }
 
 func classifyQueryErr(err error) error {

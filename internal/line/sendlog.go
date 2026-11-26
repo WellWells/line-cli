@@ -49,7 +49,13 @@ func (e sendLogEntry) outcome() string {
 }
 
 func duplicateError(dup sendLogEntry) error {
-	return &Error{Code: ErrDuplicateSend, Message: "the same text was already sent, or possibly sent, to " + dup.To + " at " + dup.Time + " (" + dup.outcome() + "); check with 'line read " + dup.To + "' and add --allow-duplicate only if you really mean to send it again"}
+	return duplicateErrorFor(dup, "the same text", "line read "+dup.To)
+}
+
+// duplicateErrorFor is DUPLICATE_SEND for what was sent (as "the same
+// text"); check is the command that shows whether it arrived.
+func duplicateErrorFor(dup sendLogEntry, what, check string) error {
+	return &Error{Code: ErrDuplicateSend, Message: what + " was already sent, or possibly sent, to " + dup.To + " at " + dup.Time + " (" + dup.outcome() + "); check with '" + check + "' and add --allow-duplicate only if you really mean to send it again"}
 }
 
 func sendLogPath() string { return filepath.Join(storeDir(), "send-log.jsonl") }
@@ -120,6 +126,11 @@ func recentDuplicate(to, sum string, now time.Time) (sendLogEntry, bool) {
 // so a concurrent identical send is refused, and so is a later one if this
 // process dies before LINE answers. On error nothing has been sent.
 func claimSend(e sendLogEntry, allowDuplicate bool) error {
+	return claimSendFor(e, allowDuplicate, duplicateError)
+}
+
+// claimSendFor is claimSend whose DUPLICATE_SEND error is dupErr's.
+func claimSendFor(e sendLogEntry, allowDuplicate bool, dupErr func(sendLogEntry) error) error {
 	unlock, err := lockSendLog()
 	if err != nil {
 		return &Error{Code: ErrSendFailed, Message: "not sent: could not lock the send log: " + err.Error()}
@@ -127,7 +138,7 @@ func claimSend(e sendLogEntry, allowDuplicate bool) error {
 	defer unlock()
 	if !allowDuplicate {
 		if dup, ok := recentDuplicate(e.To, e.SHA256, time.Now()); ok {
-			return duplicateError(dup)
+			return dupErr(dup)
 		}
 	}
 	e.Result, e.Time = resultPending, ""

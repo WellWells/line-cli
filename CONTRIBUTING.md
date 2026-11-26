@@ -4,7 +4,7 @@
 
 This repository holds the open edition of line-cli. It reads and searches local LINE data and decrypts locally cached media.
 
-The code that talks to LINE's servers (`send`, `react`, `unsend`, `download`, OpenChat sync) and the update check are not included. To use those features, install an [official release](https://github.com/WellWells/line-cli/releases/latest).
+Sending, reactions, unsending, downloads, group notes and albums, OpenChat sync and update checks require an [official release](https://github.com/WellWells/line-cli/releases/latest).
 
 ## Build and test
 

@@ -2,6 +2,16 @@
 
 Versions follow `v1.x.y`: x for new features or other changes, y for bug fixes only.
 
+## 1.3.0 - 2026-11-26 14:50
+
+### Features
+
+- notes: read, write and download group notes and albums
+
+### Fixes
+
+- send: blank EXIF GPS anywhere in a JPEG
+
 ## 1.2.0 - 2026-11-15 23:29
 
 ### Features

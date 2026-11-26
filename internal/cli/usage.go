@@ -21,7 +21,7 @@ type humanCmd struct {
 	name  string
 	group int       // overview section: groupRead, groupOnline or groupSetup; -1 to leave it out
 	args  string    // shown after the name in the overview
-	short [2]string // the overview line
+	short [2]string // Start with a verb and say what the command shows or changes.
 	usage []string  // usage lines, after "line "
 	long  [2]string // the command's own help
 	flags []humanFlag
@@ -35,12 +35,14 @@ const (
 
 var groupTitles = [][2]string{
 	{"Read (read-only)", "讀取（唯讀）"},
-	{"Online (LINE must be running)", "連網（需要 LINE 正在執行）"},
+	{"Online (download, react, unsend and send need LINE running)", "連網（執行 download、react、unsend、send 時需要開啟 LINE）"},
 	{"Setup", "設定"},
 }
 
 // openOnlineTitle replaces the online section's title in an open build.
 var openOnlineTitle = [2]string{"Official prebuilt build only (not in this open build)", "只有官方預編譯版才有（open 版沒有）"}
+
+var unreadSummary = [2]string{"List unread messages by chat without marking them as read", "列出各聊天室的未讀訊息，不會標為已讀"}
 
 func defaultN(n int) [2]string {
 	return [2]string{fmt.Sprintf("(default %d)", n), fmt.Sprintf("（預設 %d）", n)}
@@ -66,26 +68,26 @@ func humanCmds() []humanCmd {
 		{name: "help", group: -1, args: "[command]",
 			short: [2]string{"Show help", "顯示說明"},
 			usage: []string{"help [command|topic] [--json]"},
-			long:  [2]string{"Show this help, or one command's. --json prints the full reference for AI agents, as do the topics glossary, semantics, recipes, safety and errors.", "顯示這份說明，或單一指令的說明。加上 --json 會輸出給 AI agent 的完整說明；glossary、semantics、recipes、safety、errors 這幾個主題也是給 agent 看的。"},
+			long:  [2]string{"Show the command overview or help for one command or topic. Add --json for machine-readable help. Topics include glossary, semantics, recipes, safety and errors.", "顯示指令總覽、個別指令或主題的說明。加上 --json 可輸出機器可讀的說明。可查詢的主題有 glossary、semantics、recipes、safety 和 errors。"},
 			flags: []humanFlag{{"--json", [2]string{"The machine-readable help, for AI agents", "給 AI agent 的機器可讀說明"}}}},
 		{name: "status", group: groupRead,
-			short: [2]string{"Whether the data is current and LINE is running", "資料是否最新、LINE 是否在執行"},
+			short: [2]string{"Check whether LINE is running and how current the local data is", "檢查 LINE 是否正在執行，以及本機資料是否最新"},
 			usage: []string{"status"},
 			long:  [2]string{"Show whether LINE is running, when its data was last written, the time span of the messages on this PC, and chats LINE has not synced yet.", "顯示 LINE 是否在執行、資料最後寫入的時間、本機訊息的時間範圍，以及 LINE 還沒同步的聊天室。"}},
-		{name: "chats", group: groupRead, args: "[name]",
+		{name: "chats", group: groupRead, args: "[name|id]",
 			short: [2]string{"List chats and their chat_id", "列出聊天室與 chat_id"},
-			usage: []string{"chats [name] [--chat-type TYPE] [--limit N]"},
-			long:  [2]string{"List chats, most recently active first. A name keeps only the chats whose name contains it.", "列出聊天室，最近有活動的在前。給名稱時，只列出名稱包含它的聊天室。"},
+			usage: []string{"chats [name|id] [--chat-type TYPE] [--limit N]"},
+			long:  [2]string{"List chats, most recently active first. Filter by part of a name, a chat_id or the first four or more characters of a chat_id.", "列出聊天室，最近有活動的排在前面。可用部分名稱、完整 chat_id 或 chat_id 的前四個以上字元篩選。"},
 			flags: []humanFlag{flagChatType, humanLimit([2]string{"chats", "個聊天室"}, line.DefaultChatsLimit)}},
-		{name: "contacts", group: groupRead, args: "[name]",
+		{name: "contacts", group: groupRead, args: "[name|id]",
 			short: [2]string{"List contacts, yourself included", "列出聯絡人（包含自己）"},
 			usage: []string{"contacts [name|id] [--include-members] [--limit N]"},
 			long:  [2]string{"List your contacts, you first. A name or id looks people up.", "列出聯絡人，自己排第一個。給名稱或 id 可以查詢特定的人。"},
 			flags: []humanFlag{{"--include-members", [2]string{"Also open-chat members", "一併列出社群成員"}}, humanLimit([2]string{"people", "人"}, line.DefaultContactsLimit)}},
 		{name: "members", group: groupRead, args: "<chat>",
-			short: [2]string{"Members of a group or open chat", "群組或社群的成員"},
+			short: [2]string{"List chat members", "列出聊天室成員"},
 			usage: []string{"members <chat> [--limit N]"},
-			long:  [2]string{"List who is in a group or open chat.", "列出群組或社群裡有哪些人。"},
+			long:  [2]string{"List the people in a chat. Groups include pending invitees. For open chats, the list covers only the members LINE has seen.", "列出聊天室成員。群組也會列出已受邀、尚未加入的人。社群只會列出 LINE 已記錄的成員。"},
 			flags: []humanFlag{humanLimit([2]string{"members", "位成員"}, line.DefaultMembersLimit)}},
 		{name: "read", group: groupRead, args: "<chat>",
 			short: [2]string{"Read messages (--since, --until, --around <id>)", "讀取訊息（--since、--until、--around <id>）"},
@@ -98,7 +100,7 @@ func humanCmds() []humanCmd {
 				{"--max-threads N", [2]string{fmt.Sprintf("Open chats: read the replies of at most N threads (default %d)", line.DefaultReadThreads), fmt.Sprintf("社群聊天：最多讀取 N 個討論串的回覆（預設 %d 個）", line.DefaultReadThreads)}},
 				flagOffline}},
 		{name: "search", group: groupRead, args: "[text]",
-			short: [2]string{"Search messages across chats (--from, --chat, --since)", "跨聊天室搜尋訊息（--from、--chat、--since）"},
+			short: [2]string{"Search messages across chats (--from, --chat, --since)", "搜尋各聊天室的訊息（--from、--chat、--since）"},
 			usage: []string{"search [text] [--chat <chat>] [--from NAME] [--type TYPE] [--chat-type TYPE] [--since TIME] [--until TIME] [--limit N] [--order desc|asc]"},
 			long:  [2]string{"Search messages in every chat, newest first. Every word must appear; words in double quotes must appear together.", "搜尋所有聊天室的訊息，新的在前。每個詞都要出現；用雙引號括起來的詞要連在一起出現。"},
 			flags: []humanFlag{flagChat, flagFrom,
@@ -119,16 +121,16 @@ func humanCmds() []humanCmd {
 				flagSince, flagUntil, humanLimit([2]string{"groups", "組"}, line.DefaultStatsLimit),
 				{"--include-events", [2]string{"Also count system events and unsent messages", "也計入系統事件與收回的訊息"}}}},
 		{name: "unread", group: groupRead,
-			short: [2]string{"Unread messages", "未讀訊息"},
+			short: unreadSummary,
 			usage: []string{"unread [--include-official] [--include-hidden] [--limit-chats N] [--per-chat-limit N] [--offline]"},
-			long:  [2]string{"Show the chats with unread messages, and those messages. Unread open-chat messages that LINE for PC has not synced come from LINE's server (LINE must be running).", "列出有未讀訊息的聊天室，以及這些未讀訊息。社群裡 LINE 電腦版還沒同步的未讀訊息，會從 LINE 伺服器取得（LINE 必須在執行）。"},
+			long:  [2]string{unreadSummary[langEN] + ". Each chat's messages appear oldest first. With LINE running, the full edition can fetch unread open-chat messages missing from this PC. Use --offline to read only local data.", unreadSummary[langZhTW] + "。每個聊天室內的訊息由舊到新排列。LINE 正在執行時，完整版可以從伺服器取得本機尚未同步的社群未讀訊息。加上 --offline 就只讀本機資料。"},
 			flags: []humanFlag{{"--include-official", [2]string{"Also official accounts", "也包含官方帳號"}},
 				{"--include-hidden", [2]string{"Also hidden chats", "也包含隱藏的聊天室"}},
 				{"--limit-chats N", [2]string{"At most N chats " + defaultN(line.DefaultUnreadChats)[0], "最多 N 個聊天室" + defaultN(line.DefaultUnreadChats)[1]}},
 				{"--per-chat-limit N", [2]string{"At most N messages per chat " + defaultN(line.DefaultUnreadPerChat)[0], "每個聊天室最多 N 則" + defaultN(line.DefaultUnreadPerChat)[1]}},
 				flagOffline}},
 		{name: "watch", group: groupRead, args: "[chat]",
-			short: [2]string{"Print new messages as LINE stores them", "LINE 存下新訊息時即時印出"},
+			short: [2]string{"Show new messages as LINE saves them on this PC", "持續顯示 LINE 剛存到本機的新訊息"},
 			usage: []string{"watch [chat] [--interval N] [--count N] [--timeout N] [--include-official]"},
 			long: [2]string{"Follow this PC's LINE data and print each new message on its own line, until Ctrl+C. Give a chat to follow only that one. LINE must be running. It only reads what LINE PC stores, so thread replies and open chats LINE has not synced do not appear.",
 				"持續讀取這台電腦的 LINE 資料，每則新訊息印成一行，按 Ctrl+C 結束。指定聊天室就只看那一個。LINE 必須開著。只讀得到 LINE 電腦版存下的內容，討論串的回覆和還沒同步的社群訊息不會出現。"},
@@ -150,8 +152,10 @@ func humanCmds() []humanCmd {
 				flagSince, flagUntil, humanLimit([2]string{"files", "個檔案"}, line.DefaultDownloadLimit),
 				{"--out DIR", [2]string{`Save to DIR (default %LOCALAPPDATA%\linecli\downloads)`, `存到 DIR（預設 %LOCALAPPDATA%\linecli\downloads）`}},
 				{"--media", [2]string{"Also full-size images, videos and voice messages", "也下載原尺寸圖片、影片與語音"}}}},
+		notesHuman(),
+		albumsHuman(),
 		{name: "react", group: groupOnline, args: "--to <chat_id> --id <id>",
-			short: [2]string{"React to a message, or remove your reaction (--dry-run first, then -y)", "對訊息按表情回應，或收回你的回應（先 --dry-run，確認後加 -y）"},
+			short: [2]string{"Add or remove your reaction to a message (--dry-run first, then -y)", "加入或收回你對訊息的表情回應（先 --dry-run，確認後加 -y）"},
 			usage: []string{"react --to <chat_id> --id <id> (--reaction <name> | --remove) (--dry-run | -y)"},
 			long: [2]string{"Add your reaction to a message stored on this PC, or remove it. Works in one-to-one chats and groups. The other people in the chat can see it.",
 				"對這台電腦存有的訊息按表情回應，或收回回應。可用於 1 對 1 聊天和群組。聊天裡的其他人都看得到。"},
@@ -171,13 +175,13 @@ func humanCmds() []humanCmd {
 				{"--dry-run", [2]string{"Show what would be done, without doing it", "只顯示內容，不實際執行"}},
 				{"-y, --yes", [2]string{"Do it", "確定執行"}}}},
 		{name: "update", group: groupOnline,
-			short: [2]string{"Update line-cli to the latest version (asks first; -y to skip)", "更新 line-cli 到最新版本（會先詢問；-y 直接更新）"},
+			short: [2]string{"Check for a line-cli update (-y installs it without asking)", "檢查 line-cli 是否有新版本（加 -y 直接安裝更新）"},
 			usage: []string{"update [-y]"},
-			long: [2]string{"Ask GitHub for the latest release. When there is a newer one, it asks whether to update now and installs it on y; -y updates without asking. Without a console it only shows the command that updates line-cli. It also looks once a day by itself, after the first command that succeeds, and adds one line to stderr when there is a new version; set LINECLI_NO_UPDATE_NOTIFIER=1 to turn that off.",
-				"向 GitHub 查詢最新版本。有新版本時會詢問是否現在更新，回答 y 就安裝；加 -y 不詢問、直接更新。沒有主控台時只顯示更新指令。每天第一次指令成功後也會自動檢查一次，有新版本時在 stderr 多印一行；設定 LINECLI_NO_UPDATE_NOTIFIER=1 可關閉。"},
+			long: [2]string{"Check GitHub for a newer line-cli release. At a console, confirm with y to install the update. Without a console, the command only reports the result. Pass -y in either case to install an available update without prompting. The daily update check prints a notice on stderr when an update is available. Set LINECLI_NO_UPDATE_NOTIFIER=1 to disable that check.",
+				"到 GitHub 檢查 line-cli 是否有新版本。在主控台回答 y 就會安裝更新。沒有主控台時，預設只顯示檢查結果。兩種情況都可以加 -y 直接安裝新版本。每日自動檢查若發現新版本，會在 stderr 顯示通知。設定 LINECLI_NO_UPDATE_NOTIFIER=1 可關閉每日檢查。"},
 			flags: []humanFlag{{"-y, --yes", [2]string{"Update without asking", "不詢問，直接更新"}}}},
 		{name: "send", group: groupOnline, args: "--to <chat_id>",
-			short: [2]string{"Send text, files, photos or videos as you (--dry-run first, then -y)", "以你的身分傳送文字、檔案、照片或影片（先 --dry-run，確認後加 -y）"},
+			short: [2]string{"Send text, files, photos or videos as you (--dry-run first, then -y)", "用你的帳號傳送文字、檔案、照片或影片（先 --dry-run，確認後加 -y）"},
 			usage: []string{
 				"send --to <chat_id> (--message TEXT | --message-file FILE | --stdin) [--reply-to <id>] [--mention <who> ...] [--mention-all] (--dry-run | -y)",
 				"send --to <chat_id> --file PATH [--file PATH ...] [--as-file] [--message TEXT] (--dry-run | -y)",
@@ -199,26 +203,26 @@ func humanCmds() []humanCmd {
 		{name: "init", group: -1, args: "[--forget]",
 			short: [2]string{"Fetch the database key again, or forget it", "重新取得資料庫金鑰，或刪除快取的金鑰"},
 			usage: []string{"init [--forget]"},
-			long:  [2]string{"Not needed in normal use: every command fetches and caches the database key by itself when it needs it, starting LINE if it does not run. This forces a new fetch.", "平常不需要執行：每個指令需要時都會自動取得並快取資料庫金鑰，LINE 沒在執行時也會自動啟動它。這個指令只是強制重新取得。"},
+			long:  [2]string{"Refresh the cached database key, or delete it with --forget. Commands that need the key normally fetch it automatically, starting LINE if needed.", "重新取得並快取資料庫金鑰，加 --forget 則刪除快取的金鑰。平常需要金鑰的指令會自動取得，必要時會啟動 LINE。"},
 			flags: []humanFlag{{"--forget", [2]string{"Delete the cached key", "刪除快取的金鑰"}}}},
 		{name: "skill", group: groupSetup, args: "install",
-			short: [2]string{"Teach AI agents (Claude Code, Codex, ...) to use line-cli", "讓 AI agent（Claude Code、Codex 等）學會使用 line-cli"},
-			usage: []string{"skill install [--agent LIST] [-y]", "skill uninstall", "skill"},
+			short: [2]string{"Install the line-cli skill for AI agents", "安裝供 AI agent 使用的 line-cli 操作指南"},
+			usage: []string{"skill install [--agent LIST] [--update] [-y]", "skill uninstall", "skill"},
 			long: [2]string{`install shows a checklist of AI agents, the ones on this PC ticked, and installs the line-cli skill for those you choose: in the shared folder ~\.agents\skills, which Codex, Cursor, GitHub Copilot, Gemini CLI and OpenCode read, and a copy for Claude Code (~\.claude\skills), Antigravity (~\.gemini\config\skills) and other agents. Your choice is saved, and updates keep to it without asking. uninstall removes the skill everywhere. Without either, print the skill.`,
 				`install 會列出 AI agent 讓你勾選（這台電腦上有的會先勾好），把 line-cli 的 skill 裝給你選的 agent：本體放在共用資料夾 ~\.agents\skills（Codex、Cursor、GitHub Copilot、Gemini CLI、OpenCode 都讀這裡），Claude Code（~\.claude\skills）、Antigravity（~\.gemini\config\skills）等各放一份複本。你的選擇會記住，之後更新沿用，不再詢問。uninstall 會從所有地方移除。兩者都不加時，直接印出 skill 內容。`},
 			flags: []humanFlag{{"--agent LIST", [2]string{"Install for these agents without asking, e.g. claude-code,antigravity (none: no agent)", "不詢問，直接裝給這些 agent，例如 claude-code,antigravity（none：都不裝）"}},
 				{"--update", [2]string{"Keep to the saved choice; ask only the first time (the install script uses this)", "沿用記住的選擇，只有第一次才詢問（安裝腳本用這個）"}},
 				{"-y, --yes", [2]string{"Do not ask: the saved choice, else the agents on this PC", "不詢問：沿用記住的選擇，沒有就裝給這台電腦上有的 agent"}}}},
 		{name: "uninstall", group: groupSetup,
-			short: [2]string{"Remove line-cli from this PC", "從這台電腦移除 line-cli"},
+			short: [2]string{"Remove line-cli and its locally saved files", "移除 line-cli 及其保存在本機的檔案"},
 			usage: []string{"uninstall [-y]"},
 			long: [2]string{"Delete line-cli, its entry on the user PATH, its skill for AI agents and %LOCALAPPDATA%\\linecli (key cache, send log, previews and downloads), then check that they are gone. It asks first; -y skips the question. LINE and its data are not touched.",
 				"刪除 line-cli、使用者 PATH 上的項目、AI agent 的 skill，以及 %LOCALAPPDATA%\\linecli（金鑰快取、送出紀錄、預覽與下載的檔案），並確認都已刪除。執行前會先詢問，加 -y 不詢問。LINE 本身和 LINE 的資料不受影響。"},
 			flags: []humanFlag{{"-y, --yes", [2]string{"Do not ask", "不詢問"}}}},
 		{name: "version", group: groupSetup,
-			short: [2]string{"Show the version", "顯示版本"},
+			short: [2]string{"Show the line-cli version", "顯示 line-cli 版本"},
 			usage: []string{"version"},
-			long:  [2]string{"Print the version and the git commit it was built from.", "顯示版本，以及建置時的 git commit。"}},
+			long:  [2]string{"Print the line-cli version on one line.", "以一行文字顯示 line-cli 版本。"}},
 	}
 }
 
@@ -233,7 +237,14 @@ func printOverview(w io.Writer, l lang) {
 		fmt.Fprintln(w, l.pick([2]string{"line-cli reads your own LINE PC data and sends messages as you.", "line-cli 讀取你自己電腦上的 LINE PC 資料，也能以你的身分傳送訊息。"}))
 	}
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, l.pick([2]string{"Usage: line <command> [flags]", "用法：line <指令> [參數]"}))
+	fmt.Fprintln(w, l.pick([2]string{"Usage: line <command> [arguments] [flags]", "用法：line <指令> [參數] [選項]"}))
+	fmt.Fprintln(w, l.pick([2]string{"Example: line unread --text", "範例：line unread --text"}))
+	width := 0
+	for _, c := range cmds {
+		if c.group >= 0 {
+			width = max(width, len(strings.TrimSpace("line "+c.name+" "+c.args)))
+		}
+	}
 	for g, title := range groupTitles {
 		if g == groupOnline && edition == "open" {
 			title = openOnlineTitle
@@ -241,18 +252,18 @@ func printOverview(w io.Writer, l lang) {
 		fmt.Fprintf(w, "\n%s\n", l.pick(title))
 		for _, c := range cmds {
 			if c.group == g {
-				fmt.Fprintf(w, "  %-30s %s\n", strings.TrimSpace("line "+c.name+" "+c.args), l.pick(c.short))
+				fmt.Fprintf(w, "  %-*s  %s\n", width, strings.TrimSpace("line "+c.name+" "+c.args), l.pick(c.short))
 			}
 		}
 	}
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, l.pick([2]string{
-		"<chat> is a chat_id or part of a chat name. Output is JSON; add --text for one line per item.\n" +
+		"<chat> is a chat_id or part of a chat name. Data commands print JSON by default. Add --text for plain text.\n" +
 			"Help for a command: line <command> --help\n" +
-			"For AI agents: line skill install, or the full reference with line help --json",
-		"<chat> 可以是 chat_id 或聊天室名稱的一部分。輸出是 JSON，加 --text 改成一行一筆。\n" +
+			"For AI agents: line help <command> --json for one command, or line help --json for the full reference.",
+		"<chat> 可以是 chat_id 或聊天室名稱的一部分。資料指令預設輸出 JSON，加 --text 可改用純文字。\n" +
 			"單一指令的說明：line <指令> --help\n" +
-			"給 AI agent：line skill install，或用 line help --json 看完整說明",
+			"給 AI agent：用 line help <指令> --json 查單一指令，用 line help --json 查完整說明。",
 	}))
 }
 

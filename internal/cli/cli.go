@@ -87,6 +87,7 @@ var commands = map[string]func(*runCtx, []string) int{
 	"chats": (*runCtx).chats, "contacts": (*runCtx).contacts, "members": (*runCtx).members, "read": (*runCtx).read,
 	"search": (*runCtx).search, "find-file": (*runCtx).findFile, "stats": (*runCtx).stats, "preview": (*runCtx).preview,
 	"download": (*runCtx).download, "unread": (*runCtx).unread, "send": (*runCtx).send, "react": (*runCtx).react, "unsend": (*runCtx).unsend,
+	"notes": (*runCtx).notes, "albums": (*runCtx).albums,
 	"skill": (*runCtx).skill, "uninstall": (*runCtx).uninstall, "update": (*runCtx).update, "watch": (*runCtx).watch,
 }
 

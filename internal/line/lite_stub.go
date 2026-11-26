@@ -253,3 +253,63 @@ type DownloadResult struct {
 }
 
 func (r *Reader) Download(opt DownloadOptions) ([]DownloadResult, error) { return nil, errOpenBuild }
+
+// --- group notes and albums (full build: timeline_*.go) ---
+
+// errOpenBuildTimeline is returned by every notes and albums command.
+var errOpenBuildTimeline = errors.New("not available in this open build of line-cli: group notes (記事本) and albums (相簿) live on LINE's server and need the full edition, the official prebuilt line-cli")
+
+// UseFakeTimeline is a no-op in the open build (there is no server to fake).
+func UseFakeTimeline(baseURL string) (restore func()) { return func() {} }
+
+func (r *Reader) ListNotes(opt NotesOptions) ([]Note, error) { return nil, errOpenBuildTimeline }
+
+func (r *Reader) GetNote(opt NotesOptions) (*Note, error) { return nil, errOpenBuildTimeline }
+
+func (r *Reader) DownloadNoteMedia(opt TimelineDownloadOptions) ([]DownloadResult, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) ListAlbums(opt AlbumsOptions) ([]GroupAlbum, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) ListAlbumPhotos(opt AlbumsOptions) ([]AlbumPhoto, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) DownloadAlbumPhotos(opt TimelineDownloadOptions) ([]DownloadResult, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) AddNote(opt NoteWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) CommentNote(opt NoteWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) DeleteNote(opt NoteWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) DeleteComment(opt NoteWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) CreateAlbum(opt AlbumWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) AddAlbumPhotos(opt AlbumWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) DeleteAlbum(opt AlbumWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}
+
+func (r *Reader) DeletePhotos(opt AlbumWriteOptions) (*TimelinePlan, error) {
+	return nil, errOpenBuildTimeline
+}

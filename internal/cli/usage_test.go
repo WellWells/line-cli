@@ -139,3 +139,27 @@ func TestHumanHelpOutput(t *testing.T) {
 		t.Errorf("zh-TW read --help --json: rc=%d out=%.80s", code, out)
 	}
 }
+
+func TestUnreadHelpExplainsReadStatus(t *testing.T) {
+	for _, tc := range []struct {
+		locale string
+		action string
+		effect string
+	}{
+		{"en", "List unread messages by chat", "without marking them as read"},
+		{"zh-TW", "列出各聊天室的未讀訊息", "不會標為已讀"},
+	} {
+		t.Setenv("LINECLI_LANG", tc.locale)
+		for _, args := range [][]string{{"help"}, {"unread", "--help"}} {
+			code, out := runCLI(args...)
+			if code != 0 || !strings.Contains(string(out), tc.action) || !strings.Contains(string(out), tc.effect) {
+				t.Errorf("%s %v: missing unread action or read status", tc.locale, args)
+			}
+		}
+	}
+	code, out := runCLI("help", "unread", "--json")
+	var c cmdDoc
+	if code != 0 || json.Unmarshal(out, &c) != nil || !strings.HasPrefix(c.Summary, "List unread messages by chat without marking them as read") {
+		t.Errorf("help unread --json: summary does not explain the action and read status")
+	}
+}

@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/WellWells/line-cli?label=release)](https://github.com/WellWells/line-cli/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-在 Windows 上用指令或 AI agent（Claude Code、Codex 等）操作自己的 LINE：讀訊息、搜尋、傳訊息和檔案、標記成員、按表情回應、收回訊息。
+在 Windows 上用指令或 AI agent（Claude Code、Codex 等）操作自己的 LINE：讀訊息、搜尋、傳訊息和檔案、標記成員、按表情回應、收回訊息，也能讀取或新增群組的記事本和相簿。
 
 不需要申請 LINE Bot，也不用另外登入。只要這台電腦的 LINE PC 登入過，就能直接使用。
 
@@ -128,9 +128,10 @@ line skill install
 | 在專案群組標記阿志，問他進度 | 用 `@阿志` 標記他並傳送 |
 | 對小明剛才那則訊息按愛心 | 按表情回應 |
 | 把我剛才傳錯的那則收回 | 收回你自己的訊息 |
+| Family 群組記事本裡關於旅行寫了什麼？ | 用 `line notes` 讀群組記事本 |
 | 等小明回覆，有回覆就告訴我 | 用 `line watch` 等新訊息 |
 
-傳訊息、標記和收回都會以你的身分執行，所以 agent 會先給你看內容，你同意後才動作。
+傳訊息、按表情或變更群組記事本和相簿前，agent 會先讓你確認。刪除時會顯示要移除的訊息、記事、留言、照片或整本相簿。群組記事本和相簿需要官方完整版 1.3.0 以上。
 
 聊天內容是別人寫的文字，agent 不會把訊息裡的話當成指令。
 
@@ -151,6 +152,8 @@ line skill install
 | 找分享過的檔案 | `line find-file "報價" --ext pdf` |
 | 看群組成員 | `line members Family` |
 | 統計誰講最多話 | `line stats Family --by sender` |
+| 讀群組記事本 | `line notes Family --comments 5` |
+| 看群組相簿 | `line albums Family` |
 | 傳訊息 | `line send --to 小明 --message "晚點到" -y` |
 | 傳檔案或照片 | `line send --to 小明 --file C:\docs\report.pdf -y` |
 | 即時看新訊息 | `line watch` |
@@ -332,10 +335,10 @@ LINE 更新時，它的更新程式會結束所有名為 `LINE.exe` 的程式，
 
 ## 安全與隱私
 
-line-cli 只處理你自己的帳號和這台電腦上的資料。
+line-cli 使用你自己的 LINE 帳號。群組記事本和相簿存放在 LINE 伺服器。
 
-- 聊天資料只在記憶體中解密，不會在硬碟留下明文資料庫，也不會修改 LINE 的資料。
-- 訊息和檔案以 LINE 的 Letter Sealing 加密後才送出。照片和影片的預覽圖與原檔使用同一把金鑰，不想這樣時請加 `--as-file`。
+- 本機聊天資料庫只在記憶體中解密，讀取時保留硬碟上的原始資料庫。
+- `line send` 用 LINE 的 Letter Sealing 加密聊天訊息和檔案。照片和影片的預覽圖與原檔使用同一把金鑰，若要當成檔案傳送，可加 `--as-file`。
 - 只會連到 LINE 的伺服器和 GitHub，不會把資料傳給第三方。連到 GitHub 只是檢查新版本，設定 `LINECLI_NO_UPDATE_NOTIFIER=1` 可關閉。
 - 下載的檔案和 `--out` 的輸出是私人資料，請不要放進 git repo、雲端同步或共用資料夾。
 - 非官方用戶端可能違反 LINE 的使用條款，帳號可能被限制或停權。請維持一般使用頻率，不要大量發送。

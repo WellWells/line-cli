@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/WellWells/line-cli?label=release)](https://github.com/WellWells/line-cli/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Use your own LINE account on Windows from the command line or an AI agent such as Claude Code or Codex: read and search messages, send text and files, mention group members, react, and unsend.
+Use your own LINE account on Windows from the command line or an AI agent such as Claude Code or Codex: read and search messages, send text and files, mention group members, react, unsend, and read or add to a group's notes and albums.
 
 No LINE bot and no separate login. If LINE for Windows has been signed in on this PC, you can start right away.
 
@@ -128,9 +128,10 @@ Open a new PowerShell and type `claude` or `codex` to start the agent (for a des
 | Mention Sam in the project group and ask how it's going | Sends a message that tags `@Sam` |
 | React with a heart to Alex's last message | Adds a reaction |
 | Take back the message I just sent by mistake | Unsends your own message |
+| What do the Family group's notes say about the trip? | Reads the group's notes with `line notes` |
 | Wait for Alex to reply and tell me when he does | Waits with `line watch` |
 
-Sending, mentioning and unsending act as you, so the agent shows you the content first and acts only after you agree.
+The agent previews messages, reactions and changes to group notes or albums for your approval. For a deletion, it shows which message, post, comment, photo or album you selected. Group notes and albums require the official full edition, version 1.3.0 or later.
 
 Chat content is text written by other people. The agent does not treat what a message says as instructions.
 
@@ -151,6 +152,8 @@ You can run every command yourself without an AI agent. Replace `Alex` below wit
 | Find shared files | `line find-file "quote" --ext pdf` |
 | See group members | `line members Family` |
 | See who talks the most | `line stats Family --by sender` |
+| Read a group's notes | `line notes Family --comments 5` |
+| See a group's albums | `line albums Family` |
 | Send a message | `line send --to Alex --message "Running late" -y` |
 | Send a file or photo | `line send --to Alex --file C:\docs\report.pdf -y` |
 | Watch new messages live | `line watch` |
@@ -332,10 +335,10 @@ When LINE updates, its updater ends every program named `LINE.exe`, and that can
 
 ## Security and privacy
 
-line-cli handles only your own account and the data on this PC.
+line-cli works with your own LINE account. Group notes and albums live on LINE's servers.
 
-- Chat data is decrypted in memory only. No plain-text database is left on disk, and LINE's data is not changed.
-- Messages and files are encrypted with LINE's Letter Sealing before they are sent. A photo or video and its preview use the same key; add `--as-file` if you do not want that.
+- The local chat database is decrypted in memory. Reading leaves the database on disk untouched.
+- `line send` encrypts chat messages and files with LINE's Letter Sealing. A photo or video and its preview use the same key. Use `--as-file` to send it as a file.
 - It connects only to LINE's servers and GitHub, and sends no data to third parties. GitHub is used only to check for new versions; set `LINECLI_NO_UPDATE_NOTIFIER=1` to turn that off.
 - Downloaded files and `--out` output are private. Keep them out of git repositories, cloud sync and shared folders.
 - Using an unofficial client may break LINE's terms of use, and your account may be restricted or suspended. Keep to normal use and do not send in bulk.

@@ -25,6 +25,7 @@ const (
 	ErrSenderAmbiguous     ErrorCode = "SENDER_AMBIGUOUS"
 	ErrUpdateCheckFailed   ErrorCode = "UPDATE_CHECK_FAILED"
 	ErrUpdateFailed        ErrorCode = "UPDATE_FAILED"
+	ErrChannelTokenMissing ErrorCode = "CHANNEL_TOKEN_MISSING"
 )
 
 type Error struct {

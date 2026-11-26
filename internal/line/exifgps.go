@@ -1,6 +1,7 @@
 package line
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"io"
@@ -17,10 +18,6 @@ import (
 // byteRange is a span of a file, by offset and length.
 type byteRange struct{ off, n int64 }
 
-// maxEXIFHead is how much of a JPEG is read to find its EXIF data, which sits
-// in APP1 segments (at most 64 KB each) near the start.
-const maxEXIFHead = 256 << 10
-
 // jpegGPSRangesOf returns the ranges to blank in a file: its EXIF GPS data if
 // it is a JPEG (whatever its name), else none.
 func jpegGPSRangesOf(path string) ([]byteRange, error) {
@@ -29,47 +26,62 @@ func jpegGPSRangesOf(path string) ([]byteRange, error) {
 		return nil, err
 	}
 	defer f.Close()
-	head := make([]byte, maxEXIFHead)
-	n, err := io.ReadFull(f, head)
-	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
-		return nil, err
-	}
-	return jpegGPSRanges(head[:n]), nil
+	return jpegGPSRanges(f)
 }
 
-// jpegGPSRanges finds, in the start of a JPEG, the GPS IFD of each EXIF
-// segment: its entry count and entries, and the values stored outside them.
-func jpegGPSRanges(b []byte) []byteRange {
-	if len(b) < 4 || b[0] != 0xFF || b[1] != 0xD8 {
-		return nil
+// jpegGPSRanges reads each APP1 segment separately. A JPEG can have large
+// profiles before EXIF or additional metadata between image scans.
+func jpegGPSRanges(src io.Reader) ([]byteRange, error) {
+	r := bufio.NewReader(src)
+	var field [2]byte
+	_, err := io.ReadFull(r, field[:])
+	if err == nil && field != [2]byte{0xff, 0xd8} {
+		return nil, nil
 	}
 	var out []byteRange
-	for p := 2; p+4 <= len(b); {
-		if b[p] != 0xFF {
+	offset := int64(2)
+	for err == nil {
+		// Between segments, skip compressed image data up to the next marker.
+		var data []byte
+		data, err = r.ReadSlice(0xff)
+		offset += int64(len(data))
+		if err == bufio.ErrBufferFull {
+			err = nil
+			continue
+		}
+		marker := byte(0xff)
+		for err == nil && marker == 0xff { // repeated marker fill bytes
+			marker, err = r.ReadByte()
+			offset++
+		}
+		if err != nil || marker == 0xd9 {
 			break
 		}
-		m := b[p+1]
-		switch {
-		case m == 0xFF: // fill byte
-			p++
-			continue
-		case m == 0x01 || (m >= 0xD0 && m <= 0xD7): // no length
-			p += 2
-			continue
-		case m == 0xDA || m == 0xD9: // image data or end: no EXIF after this
-			return out
+		if marker == 0x00 || marker == 0x01 || (marker >= 0xd0 && marker <= 0xd8) {
+			continue // escaped 0xff in scan data, or a standalone marker
 		}
-		size := int(binary.BigEndian.Uint16(b[p+2:]))
-		if size < 2 {
+		_, err = io.ReadFull(r, field[:])
+		size := int(binary.BigEndian.Uint16(field[:])) - 2
+		if err != nil || size < 0 {
 			break
 		}
-		start, end := p+4, p+2+size
-		if m == 0xE1 && end <= len(b) && bytes.HasPrefix(b[start:end], []byte("Exif\x00\x00")) {
-			out = append(out, tiffGPSRanges(b[start+6:end], int64(start+6))...)
+		offset += 2
+		if marker == 0xe1 {
+			segment := make([]byte, size)
+			_, err = io.ReadFull(r, segment)
+			const exif = "Exif\x00\x00"
+			if err == nil && bytes.HasPrefix(segment, []byte(exif)) {
+				out = append(out, tiffGPSRanges(segment[len(exif):], offset+int64(len(exif)))...)
+			}
+		} else {
+			_, err = r.Discard(size)
 		}
-		p = end
+		offset += int64(size)
 	}
-	return out
+	if err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = nil // keep complete segments even if the next one is truncated
+	}
+	return out, err
 }
 
 // tiffGPSRanges finds the GPS IFD in EXIF (TIFF) data that starts at base.

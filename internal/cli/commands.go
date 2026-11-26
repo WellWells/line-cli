@@ -838,35 +838,9 @@ func (rc *runCtx) send(args []string) int {
 		}
 		return sendFiles("", false)
 	}
-	raw := *text
-	switch {
-	case *stdin:
-		b, err := io.ReadAll(io.LimitReader(os.Stdin, maxInputBytes+1))
-		if err != nil {
-			return rc.fail(invalid("could not read --stdin"))
-		}
-		raw = string(b)
-	case given["message-file"]:
-		b, err := readMessageFile(*file)
-		if err != nil {
-			return rc.fail(err)
-		}
-		raw = string(b)
-	}
-	if len(raw) > maxInputBytes {
-		return rc.fail(invalid("message input is larger than 1 MiB"))
-	}
-	msg, normalized, err := line.NormalizeSendText(raw)
+	msg, normalized, err := rc.messageText(given, *text, *file, *stdin)
 	if err != nil {
 		return rc.fail(err)
-	}
-	if given["message"] && os.Getenv("MSYSTEM") != "" && driveRooted(msg) {
-		rc.notify("warning: the --message text starts with a drive path; Git Bash (MSYS) rewrites an argument starting with '/' into a Windows path, so check text in the output, and pass such text with --stdin or --message-file, or set MSYS_NO_PATHCONV=1")
-	}
-	if strings.ContainsRune(msg, utf8.RuneError) {
-		rc.notify("warning: the text contains U+FFFD replacement characters, so it may have been mis-encoded before line-cli read it")
-	} else if *stdin && strings.HasPrefix(raw, "\ufeff") && strings.Contains(msg, "??") {
-		rc.notify("warning: the text starts with a BOM and contains '??'; Windows PowerShell 5.1 may have replaced non-ASCII characters. Set $OutputEncoding to UTF-8 or use --message-file")
 	}
 	if !*dry && !(*yes || *y) {
 		return rc.fail(invalid("refusing to send without confirmation; use --dry-run to preview or -y to send"))
@@ -888,6 +862,46 @@ func (rc *runCtx) send(args []string) int {
 	return rc.emitSend(plan)
 }
 
+// bom is the byte order mark Windows PowerShell 5.1 puts before piped text.
+const bom = string(rune(0xFEFF))
+
+// messageText reads the text of send (or a notes write) from whichever of
+// --message, --message-file and --stdin was given, normalizes it like send
+// and warns on stderr about signs of a mangled text.
+func (rc *runCtx) messageText(given map[string]bool, text, file string, stdin bool) (string, bool, error) {
+	raw := text
+	switch {
+	case stdin:
+		b, err := io.ReadAll(io.LimitReader(os.Stdin, maxInputBytes+1))
+		if err != nil {
+			return "", false, invalid("could not read --stdin")
+		}
+		raw = string(b)
+	case given["message-file"]:
+		b, err := readMessageFile(file)
+		if err != nil {
+			return "", false, err
+		}
+		raw = string(b)
+	}
+	if len(raw) > maxInputBytes {
+		return "", false, invalid("message input is larger than 1 MiB")
+	}
+	msg, normalized, err := line.NormalizeSendText(raw)
+	if err != nil {
+		return "", false, err
+	}
+	if given["message"] && os.Getenv("MSYSTEM") != "" && driveRooted(msg) {
+		rc.notify("warning: the --message text starts with a drive path; Git Bash (MSYS) rewrites an argument starting with '/' into a Windows path, so check text in the output, and pass such text with --stdin or --message-file, or set MSYS_NO_PATHCONV=1")
+	}
+	if strings.ContainsRune(msg, utf8.RuneError) {
+		rc.notify("warning: the text contains U+FFFD replacement characters, so it may have been mis-encoded before line-cli read it")
+	} else if stdin && strings.HasPrefix(raw, bom) && strings.Contains(msg, "??") {
+		rc.notify("warning: the text starts with a BOM and contains '??'; Windows PowerShell 5.1 may have replaced non-ASCII characters. Set $OutputEncoding to UTF-8 or use --message-file")
+	}
+	return msg, normalized, nil
+}
+
 // sendFiles sends files (and the text before them) and prints the plan. A
 // send that stopped at a failed file still prints what was sent, with the
 // error code and message at the top level, and exits 1.
@@ -902,9 +916,19 @@ func (rc *runCtx) sendFiles(opt line.SendFilesOptions) int {
 	}
 	code := rc.emitSendFiles(plan)
 	if plan.Error != "" {
-		return 1
+		return rc.partialFailure()
 	}
 	return code
+}
+
+// partialFailure ends a write that printed what it did before a later step
+// failed: it exits 1, and with --out the output is still saved (run saves
+// it only for a command that succeeded), so what was sent is never lost.
+func (rc *runCtx) partialFailure() int {
+	if rc.outFile != "" && rc.outTmp != nil {
+		rc.saveOut()
+	}
+	return 1
 }
 
 // expandFiles expands wildcards in --file paths that do not exist as given,
